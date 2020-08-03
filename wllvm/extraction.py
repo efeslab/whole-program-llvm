@@ -189,8 +189,16 @@ def linkFiles(pArgs, fileNames):
 
     linkCmd.append('-o={0}'.format(pArgs.outputFile))
 
-    fileNames = map(getBitcodePath, fileNames)
-    linkCmd.extend([x for x in fileNames if x != ''])
+    fileNames = [x for x in map(getBitcodePath, fileNames) if x]
+    if not fileNames:
+        raise Exception('No files to link!')
+
+    if pArgs.forceFlag:
+        linkCmd.append(fileNames[0])
+        if len(fileNames) > 1:
+            linkCmd.extend(['--override={0}'.format(x) for x in fileNames[1:]])
+    else:
+        linkCmd.extend(fileNames)
 
     try:
         linkProc = Popen(linkCmd)
@@ -600,6 +608,11 @@ def extract_bc_args():
                         'added file extension (.'+ moduleExtension + ' for bitcode '+
                         'modules and .' + bitCodeArchiveExtension +' for bitcode archives)',
                         default=None)
+    # iangneal: For hairy situations, sometimes you need to force override for globals.
+    parser.add_argument('--force', '-f',
+                        dest='forceFlag',
+                        help='Force linking using the "--override" flag fron llvm-link',
+                        action='store_true')
     pArgs = parser.parse_args(namespace=ExtractedArgs())
 
 
